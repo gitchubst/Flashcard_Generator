@@ -1426,7 +1426,18 @@
 
                 switch (currentQuizDifficulty) {
                     case 'hard':
-                        prompt = `Create a hard multiple-choice question for: Front: "${card.front}", Back: "${card.back}". The question MUST require analysis, synthesis, or evaluation. Use nuanced language like "What is the most significant implication of...", "Which statement best critiques...", or "Which of the following is LEAST associated with...". The options must be subtle. One is correct, but the others should be common misconceptions, require finer distinctions, or be plausible but incorrect applications of the concept. Return as a valid JSON object: {"question": "string", "options": ["string", "string", "string", "string"], "correctIndex": number}`;
+                        prompt = `Create a concise but challenging multiple-choice question for this card - Front: "${card.front}", Back: "${card.back}". 
+                        Follow these rules strictly:
+                        1. Question must be under 20 words
+                        2. Test application of knowledge or require inference
+                        3. All options should be short (under 15 words each)
+                        4. One option must be correct, three must be wrong
+                        5. For wrong options:
+                           - Use plausible misconceptions
+                           - Make them relate to the card content but are slightly off
+                           - Don't add unrelated detailed information
+                        5. Make some of the questions inference based questions where none of the information on the all of answers is on the card, but the questions asks you which answer is most likely based on the card, so the correct answer will have the most information that is influenced but not directly on the card, while the three wrong answers have something that makes them not as likely
+                        Return JSON: {"question": "string", "options": ["string", "string", "string", "string"], "correctIndex": number}`;
                         break;
                     case 'medium':
                         prompt = `Create a medium-difficulty multiple-choice question for: Front: "${card.front}", Back: "${card.back}". The question should ask the user to identify the "best" description or "primary" purpose, requiring them to differentiate between partially correct options. For example, use phrases like "What is the primary purpose of..." or "Which statement best describes...". The correct answer must be the most accurate. Distractors should be plausible but less accurate or incomplete. Return as a valid JSON object: {"question": "string", "options": ["string", "string", "string", "string"], "correctIndex": number}`;
@@ -1912,7 +1923,7 @@ Return a JSON object with two keys: { "isCorrect": boolean, "explanation": "A br
                 `;
                 deckList.appendChild(deckDiv);
             });
-        }
+ }
 
         function deleteCard(deckName, cardIndex) {
             showCustomConfirm(`Are you sure you want to delete this card from "${deckName}"?`, () => {
