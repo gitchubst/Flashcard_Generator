@@ -1,0 +1,2162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #3b82f6;
+            --secondary-blue: #3d90f5;
+            --light-blue: #dbeafe;
+            --light-purple: #f3e8ff;
+            --dark-blue: #7e4bff; 
+            --background: linear-gradient(135deg, #f0f7ff 0%, #f5f3ff 100%);
+            --surface: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.9));
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: rgba(126, 75, 255, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --background: #0f172a;
+            --surface: #1e293b;
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        input, textarea, .form-input, .form-textarea {
+            user-select: text;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            padding: 0;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 40px;
+            background: var(--surface);
+            box-shadow: 0 4px 6px var(--shadow);
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(45deg, var(--secondary-blue), var(--dark-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .logo:hover {
+            background: linear-gradient(45deg, var(--primary-blue), var(--dark-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .content-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .theme-toggle {
+            background: linear-gradient(45deg, var(--primary-blue), var(--dark-blue), var(--primary-blue));
+            background-size: 200% 200%;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            animation: gradientFlow 6s ease infinite;
+            user-select: none;
+        }
+
+        .theme-toggle:hover {
+            background-size: 200% 200%;
+            transform: translateY(-2px);
+            animation: gradientFlow 3s ease infinite;
+        }
+
+        .tab-container {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 30px;
+            position: relative;
+            gap: 0;  
+            width: 100%;
+            user-select: none;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 16px 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            background: transparent;
+            border: none;
+            text-align: center;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            color: var(--primary-blue);
+            border-bottom-color: var(--primary-blue);
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--text);
+            background: var(--surface);
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px var(--shadow);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+            user-select: none;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--background);
+            color: var(--text);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--primary-blue), var(--dark-blue), var(--primary-blue));
+            background-size: 200% 200%;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            animation: gradientFlow 6s ease infinite;
+            user-select: none;
+        }
+
+        .btn:hover {
+            background-size: 200% 200%;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            animation: gradientFlow 3s ease infinite;
+        }
+
+        .btn-secondary {
+            background: var(--surface); 
+            color: var(--text);
+            border: 1px solid var(--border);
+            animation: none; 
+        }
+
+        .btn-secondary:hover {
+            background: var(--border); 
+            transform: translateY(-2px); 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            animation: none; 
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            user-select: none;
+        }
+
+        .mode-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .flashcard {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 40px;
+            margin: 20px 0;
+            box-shadow: 0 8px 25px var(--shadow);
+            border: 1px solid var(--border);
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            perspective: 1000px;
+            overflow: visible;
+            user-select: none;
+        }
+
+        .flashcard:hover {
+            box-shadow: 0 8px 30px var(--shadow);
+        }
+        
+        #flashcard-content { 
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .flashcard-face {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            font-size: 20px;
+            line-height: 1.6;
+            text-align: center;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            padding: 10px 80px;
+            user-select: text;
+        }
+
+        .flashcard-front-face {
+        }
+
+        .flashcard-back-face {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard.is-flipped #flashcard-content {
+            transform: rotateY(180deg);
+        }
+
+        .arrow-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            right: 20px;
+            transform: translateY(-50%);
+            z-index: 10; 
+            pointer-events: none; 
+            width: calc(100% - 40px); 
+            user-select: none;
+        }
+
+        .arrow-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-blue); 
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto; 
+        }
+
+        .arrow-btn:hover {
+            background: var(--dark-blue); 
+            transform: scale(1.1);
+        }
+        
+        #study-area {
+            margin-bottom: 60px; 
+            padding-bottom: 20px; 
+        }
+
+        #quiz-area {
+            margin-bottom: 100px;
+            padding-bottom: 40px;
+        }
+        
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: var(--light-blue);
+            border-radius: 8px;
+        }
+
+        .quiz-question-counter, .quiz-live-score {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            user-select: none;
+        }
+        
+        .quiz-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .quiz-difficulty-btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            color: white;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .quiz-difficulty-btn:hover {
+            transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .quiz-difficulty-btn.active {
+            filter: saturate(500%);
+            transform: scale(1.02);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-counter {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 16px;
+            text-align: center;
+            margin-top: 20px;
+            user-select: none;
+        }
+
+        .card-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .card-item {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .card-item:hover {
+            border-color: var(--primary-blue);
+        }
+
+        .quiz-question {
+            font-size: 18px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: var(--surface);
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-blue);
+        }
+        .quiz-question p {
+            user-select: text;
+        }
+
+        .quiz-options {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quiz-option {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .quiz-option:hover {
+            border-color: var(--primary-blue);
+            background: var(--light-blue);
+        }
+
+        .quiz-option.selected {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .quiz-result {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .quiz-result h3 { user-select: none; }
+        .quiz-result p { user-select: text; }
+
+        .quiz-result.correct {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .quiz-result.incorrect {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 10px 0;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            user-select: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes gradientFlow {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .short-input {
+            width: 120px;
+        }
+
+        .deck-selector {
+            margin-bottom: 20px;
+        }
+
+        .score-display {
+            text-align: center;
+            padding: 30px;
+            background: var(--light-blue);
+            border-radius: 16px;
+            margin: 20px 0;
+            user-select: none;
+        }
+
+        .score-display h2 {
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 20px;
+            background: var(--surface);
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-blue);
+            user-select: text;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--text);
+            box-shadow: 0 4px 6px var(--shadow);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            max-width: 300px;
+            user-select: none;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .notification.success {
+            border-left: 4px solid #22c55e;
+        }
+
+        .notification.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .flashcard.sliding-next {
+            animation: slideNext 0.3s ease-in-out;
+        }
+
+        .flashcard.sliding-prev {
+            animation: slidePrev 0.3s ease-in-out;
+        }
+
+        @keyframes slideNext {
+            0% { transform: translateX(0) translateY(0); opacity: 1;}
+            49% { transform: translateX(-100%) translateY(0); opacity: 0; }
+            50% { transform: translateX(100%) translateY(0); opacity: 0; }
+            100% { transform: translateX(0) translateY(0); opacity: 1; }
+        }
+
+        @keyframes slidePrev {
+            0% { transform: translateX(0) translateY(0); opacity: 1; }
+            49% { transform: translateX(100%) translateY(0); opacity: 0; }
+            50% { transform: translateX(-100%) translateY(0); opacity: 0; }
+            100% { transform: translateX(0) translateY(0); opacity: 1; }
+        }
+
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0; 
+            }
+            .content-container {
+                padding: 0 10px; 
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px 20px; 
+            }
+            
+            .tab {
+                padding: 12px 10px; 
+                font-size: 14px;
+            }
+            
+            .flashcard {
+                padding: 20px;
+                min-height: 200px;
+            }
+            
+            .flashcard-face {
+                font-size: 16px;
+                padding: 10px 20px;
+            }
+            .arrow-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            .arrow-controls {
+                 left: 10px;
+                 right: 10px;
+                 width: calc(100% - 20px);
+            }
+            .quiz-header {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <div class="container">
+        <div class="header">
+            <div class="logo">Flashcard Generator</div>
+            <button class="theme-toggle" onclick="toggleTheme()">Dark Mode</button>
+        </div>
+        
+        <div class="content-container">
+            <div class="tab-container">
+                <div class="tab active" onclick="showSection('create')">Create Cards</div>
+                <div class="tab" onclick="showSection('study')">Study</div>
+                <div class="tab" onclick="showSection('quiz')">Quiz</div>
+                <div class="tab" onclick="showSection('manage')">Manage Decks</div>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+            </div>
+
+            <div id="create-section" class="section">
+            <div class="card">
+                <h2>Generate AI Flashcards</h2>
+                <br>
+                <div class="form-group">
+                    <label class="form-label">Generation Mode</label>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" data-mode="terms">Terms</button>
+                        <button class="mode-btn" data-mode="sentences">Sentences</button>
+                        <button class="mode-btn" data-mode="questions">Questions</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <div class="form-group">
+                        <label class="form-label">Number of Cards</label>
+                        <input type="number" id="card-count" class="form-input short-input" min="1" value="10">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Topic</label>
+                    <input type="text" id="topic-input" class="form-input" placeholder="Enter the main topic">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description (Optional)</label>
+                    <textarea id="description-input" class="form-textarea" placeholder="Additional context or description"></textarea>
+                </div>
+                <button class="btn" onclick="generateCards()">Generate Cards</button>
+            </div>
+
+            <div class="card">
+                <h2>Manual Card Creation</h2>
+                <br>
+                <div class="form-group">
+                    <label class="form-label">Select Deck</label>
+                    <div class="input-group">
+                        <select id="deck-select-manual" class="form-select">
+                            <option value="">New Deck</option>
+                        </select>
+                        <input type="text" id="deck-name-manual" class="form-input" placeholder="Deck name" style="display:none;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Front</label>
+                    <input type="text" id="manual-front" class="form-input" placeholder="Enter front of card">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Back</label>
+                    <textarea id="manual-back" class="form-textarea" placeholder="Enter back of card"></textarea>
+                </div>
+                <button class="btn" onclick="addManualCard()">Add Card</button>
+            </div>
+
+            <div class="card">
+                <h2>Add AI Cards to Existing Deck</h2>
+                <br>
+                <div class="input-group">
+                    <div class="form-group">
+                        <label class="form-label">Number of Cards</label>
+                        <input type="number" id="additional-card-count" class="form-input short-input" min="1" value="5">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Select Deck</label>
+                    <select id="existing-deck-select" class="form-select">
+                        <option value="">Select a deck</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Additional Prompt</label>
+                    <textarea id="additional-prompt" class="form-textarea" placeholder="Specific instructions for new cards"></textarea>
+                </div>
+                <button class="btn" onclick="generateAdditionalCards()">Add AI Cards</button>
+            </div>
+            <br>
+        </div>
+
+        <div id="study-section" class="section hidden">
+            <div class="card"> <h2>Select Deck to Study</h2>
+                <br>
+                <div class="deck-selector">
+                    <select id="study-deck-select" class="form-select">
+                        <option value="">Select a deck to study</option>
+                    </select>
+                    <div style="display: flex; gap: 10px; margin-top: 30px;">
+                        <button class="btn" onclick="startStudying()">Start Studying</button>
+                        <button class="btn" onclick="downloadDeckAsPDF()">Download PDF</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="study-area" class="hidden">
+                <div class="flashcard" onclick="flipCard()">
+                    <div class="arrow-controls">
+                        <button class="arrow-btn" onclick="previousCard(event)">←</button>
+                        <button class="arrow-btn" onclick="nextCard(event)">→</button>
+                    </div>
+                    <div id="flashcard-content"></div>
+                </div>
+                <div class="card-counter" id="card-counter">0 / 0</div>
+            </div>
+        </div>
+
+        <div id="quiz-section" class="section hidden">
+            <div class="card">
+                <h2>Quiz Setup</h2>
+                <br>
+                <div class="form-group">
+                    <label class="form-label">Select Deck</label>
+                    <select id="quiz-deck-select" class="form-select">
+                        <option value="">Select a deck for quiz</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quiz Type</label>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" data-quiz-type="multiple">Multiple Choice</button>
+                        <button class="mode-btn" data-quiz-type="short">Short Answer</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Difficulty Level</label>
+                    <div class="mode-selector">
+                <button class="quiz-difficulty-btn easy-dark" style="background: linear-gradient(45deg, #4ade80, #22c55e)" data-difficulty="easy">
+                    Easy
+                </button>
+                <button class="quiz-difficulty-btn medium-dark active" style="background: linear-gradient(45deg, #60a5fa, #3b82f6)" data-difficulty="medium">
+                    Medium
+                </button>
+                <button class="quiz-difficulty-btn hard-dark" style="background: linear-gradient(45deg, #f87171, #ef4444)" data-difficulty="hard">
+                    Hard
+                </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Number of Questions</label>
+                    <input type="number" id="quiz-question-count" class="form-input short-input" min="1" value="10">
+                </div>
+                <div style="margin-top: 40px;">
+                    <button class="btn" onclick="startQuiz()">Start Quiz</button>
+                </div>
+            </div>
+
+            <div id="quiz-area" class="hidden">
+                <div class="quiz-header">
+                    <div id="quiz-question-counter-live" class="quiz-question-counter">Question 0/0</div>
+                    <div id="quiz-live-score" class="quiz-live-score">Score: 0/0</div>
+                </div>
+                <div id="quiz-content"></div>
+                 <div class="quiz-controls">
+                    <button class="btn btn-secondary hidden" id="download-in-progress-report-btn" onclick="downloadQuizReport()">Download Report</button>
+                    <button class="btn btn-danger hidden" id="quit-quiz-btn" onclick="quitQuiz()">Quit Quiz</button>
+                </div>
+                <div id="quiz-results" class="hidden">
+                    <div class="score-display">
+                        <h2 id="final-score">Your Score</h2>
+                        <p id="score-percentage"></p>
+                        <div class="feedback">
+                            <h3>Feedback</h3>
+                            <p id="quiz-feedback"></p>
+                        </div>
+                        <br>
+                        <button class="btn" onclick="downloadQuizReport()">Download Final PDF Report</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="manage-section" class="section hidden">
+            <div class="card">
+                <h2>Your Decks</h2>
+                <br>
+                <div id="deck-list"></div>
+            </div>
+        </div>
+
+            <div id="loading" class="loading hidden"> <div class="spinner"></div>
+            </div>
+        </div> </div> <script>
+        const API_KEY = "AIzaSyDSE1dNpR14EeDpC8c0MUIPASO7B8xfuLA"; 
+        const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
+        let currentDecks = {};
+        let currentStudyDeck = null;
+        let currentCardIndex = 0;
+        let isFlipped = false; 
+        let currentQuiz = null;
+        let currentQuizType = 'multiple';
+        let currentQuizDifficulty = 'medium';
+        let currentGenerationMode = 'terms';
+        let quizResults = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDecks();
+            setupEventListeners();
+            updateDeckSelectors();
+            showSection(document.querySelector('.tab.active').getAttribute('onclick').match(/'([^']+)'/)[1] || 'create');
+        });
+
+        function setupEventListeners() {
+            document.querySelectorAll('.mode-btn, .quiz-difficulty-btn, [data-difficulty]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (this.dataset.mode) {
+                        document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        currentGenerationMode = this.dataset.mode;
+                    }
+                    if (this.dataset.quizType) {
+                        document.querySelectorAll('[data-quiz-type]').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        currentQuizType = this.dataset.quizType;
+                    }
+                    if (this.dataset.difficulty) {
+                        document.querySelectorAll('[data-difficulty]').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        currentQuizDifficulty = this.dataset.difficulty;
+                        
+                        try {
+                            localStorage.setItem('lastQuizDifficulty', this.dataset.difficulty);
+                        } catch (e) {
+                            console.error('Could not save difficulty preference:', e);
+                        }
+                    }
+                });
+            });
+
+            document.getElementById('deck-select-manual').addEventListener('change', function() {
+                const deckNameInput = document.getElementById('deck-name-manual');
+                if (this.value === '') {
+                    deckNameInput.style.display = 'block';
+                    deckNameInput.required = true;
+                } else {
+                    deckNameInput.style.display = 'none';
+                    deckNameInput.required = false;
+                }
+            });
+
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const section = this.getAttribute('onclick').match(/'([^']+)'/)[1];
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    showSection(section);
+                });
+            });
+        }
+
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            const sectionElement = document.getElementById(section + '-section');
+            if (sectionElement) {
+                 sectionElement.classList.remove('hidden');
+            }
+            
+            if (section === 'manage') {
+                displayDecks();
+            }
+            if (section !== 'study' && document.getElementById('study-area') && !document.getElementById('study-area').classList.contains('hidden')) {
+                document.getElementById('study-area').classList.add('hidden');
+            }
+             if (section !== 'quiz') {
+                document.getElementById('quiz-area').classList.add('hidden');
+                document.getElementById('quit-quiz-btn').classList.add('hidden');
+                document.getElementById('download-in-progress-report-btn').classList.add('hidden');
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggle = document.querySelector('.theme-toggle');
+            
+            if (body.dataset.theme === 'light') {
+                body.dataset.theme = 'dark';
+                themeToggle.textContent = '☀️ Light Mode';
+            } else {
+                body.dataset.theme = 'light';
+                themeToggle.textContent = '🌙 Dark Mode';
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        async function generateCards() {
+            const topic = document.getElementById('topic-input').value.trim();
+            const description = document.getElementById('description-input').value.trim();
+            const cardCount = parseInt(document.getElementById('card-count').value);
+
+            if (!topic) {
+                showNotification('Please enter a topic', 'error');
+                return;
+            }
+
+            if (cardCount < 1) {
+                showNotification('Please enter a valid number of cards', 'error');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const prompt = createPrompt(topic, description, currentGenerationMode, cardCount);
+                const cards = await callGeminiAPI(prompt);
+                
+                if (cards && cards.length > 0) {
+                    let baseDeckName = topic.charAt(0).toUpperCase() + topic.slice(1);
+                    let deckName = baseDeckName;
+                    let counter = 1;
+                    
+                    while (currentDecks[deckName]) {
+                        deckName = `${baseDeckName} ${counter}`;
+                        counter++;
+                    }
+                    
+                    currentDecks[deckName] = [];
+                    const uniqueCards = [];
+                    const seenCards = new Set();
+                    for (const card of cards) {
+                        const cardIdentifier = `${card.front.toLowerCase()}||${card.back.toLowerCase()}`;
+                        if (!seenCards.has(cardIdentifier)) {
+                            uniqueCards.push(card);
+                            seenCards.add(cardIdentifier);
+                        }
+                    }
+
+                    currentDecks[deckName].push(...uniqueCards);
+                    saveDecks();
+                    updateDeckSelectors();
+                    showNotification(`Generated ${uniqueCards.length} unique cards for "${deckName}" (${cards.length - uniqueCards.length} duplicates skipped).`, 'success');
+                    
+                    document.getElementById('topic-input').value = '';
+                    document.getElementById('description-input').value = '';
+                } else {
+                    showNotification('No cards were generated. The API might have returned an empty list or an error.', 'error');
+                }
+            } catch (error) {
+                showNotification('Error generating cards: ' + error.message, 'error');
+            }
+
+            showLoading(false);
+        }
+
+        async function generateAdditionalCards() {
+            const deckName = document.getElementById('existing-deck-select').value;
+            const additionalPrompt = document.getElementById('additional-prompt').value.trim();
+            const cardCount = parseInt(document.getElementById('additional-card-count').value);
+
+            if (!deckName) {
+                showNotification('Please select a deck', 'error');
+                return;
+            }
+
+            if (cardCount < 1) {
+                showNotification('Please enter a valid number of cards', 'error');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const existingCards = currentDecks[deckName];
+                const context = existingCards.slice(-5).map(card => `Front: ${card.front}, Back: ${card.back}`).join('\n'); 
+                
+                const prompt = `You are adding cards to an existing flashcard deck named "${deckName}". Some existing cards are:\n${context}\n\nBased on this context and the user's request: "${additionalPrompt || 'Generate similar cards'}", generate ${cardCount} new flashcards. Ensure they fit the style and topic of the deck. Return as a valid JSON array where each object has "front" and "back" properties.`;
+                
+                const cards = await callGeminiAPI(prompt);
+                
+                if (cards && cards.length > 0) {
+                    const existingFronts = new Set(currentDecks[deckName].map(card => card.front.toLowerCase()));
+                    const existingBacks = new Set(currentDecks[deckName].map(card => card.back.toLowerCase()));
+                    const uniqueCards = cards.filter(card => 
+                        !existingFronts.has(card.front.toLowerCase()) && 
+                        !existingBacks.has(card.back.toLowerCase())
+                    );
+                    
+                    currentDecks[deckName].push(...uniqueCards);
+                    saveDecks();
+                    updateDeckSelectors();
+                    showNotification(`Added ${uniqueCards.length} unique cards to "${deckName}" (${cards.length - uniqueCards.length} duplicates skipped).`, 'success');
+                    
+                    document.getElementById('additional-prompt').value = '';
+                } else {
+                     showNotification('No additional cards were generated.', 'error');
+                }
+            } catch (error) {
+                 showNotification('Error generating additional cards: ' + error.message, 'error');
+            }
+
+            showLoading(false);
+        }
+
+        function addManualCard() {
+            const front = document.getElementById('manual-front').value.trim();
+            const back = document.getElementById('manual-back').value.trim();
+            const selectedDeck = document.getElementById('deck-select-manual').value;
+            const newDeckName = document.getElementById('deck-name-manual').value.trim();
+
+            if (!front || !back) {
+                showNotification('Please fill in both front and back of the card', 'error');
+                return;
+            }
+
+            const deckName = selectedDeck || newDeckName;
+            if (!deckName) {
+                showNotification('Please select a deck or enter a new deck name', 'error');
+                return;
+            }
+
+            if (!currentDecks[deckName]) {
+                currentDecks[deckName] = [];
+            }
+
+            currentDecks[deckName].push({ front, back });
+            saveDecks();
+            updateDeckSelectors();
+
+            document.getElementById('manual-front').value = '';
+            document.getElementById('manual-back').value = '';
+            document.getElementById('deck-name-manual').value = '';
+            document.getElementById('deck-select-manual').value = ''; 
+            document.getElementById('deck-name-manual').style.display = 'none'; 
+
+            showNotification('Card added successfully!', 'success');
+        }
+        
+        function createPrompt(topic, description, mode, cardCount) {
+            const basePrompt = `Create ${cardCount} flashcards about "${topic}"${description ? `. Additional context: ${description}` : ''}.`;
+            
+            let modeInstructions = '';
+            switch (mode) {
+                case 'terms':
+                    modeInstructions = 'Create term-definition pairs where the front has 1-3 key words/terms and the back has a concise one-sentence definition or explanation.';
+                    break;
+                case 'sentences':
+                    modeInstructions = 'Create sentence-explanation pairs where the front has a complete sentence (e.g., a statement, a fact, or a concept) and the back has 1-3 sentences explaining it, providing a definition, or giving an example.';
+                    break;
+                case 'questions':
+                    modeInstructions = 'Create question-answer pairs where the front has a clear, specific question and the back has a concise 1-2 sentence answer.';
+                    break;
+            }
+
+            return `${basePrompt} ${modeInstructions} Return the result STRICTLY as a valid JSON array where each object has "front" and "back" properties. Example: [{"front": "Term1", "back": "Definition1"}, {"front": "Term2", "back": "Definition2"}]. Ensure the JSON is well-formed and contains exactly ${cardCount} flashcards.`;
+        }
+
+        async function callGeminiAPI(prompt) {
+            showLoading(true); 
+            try {
+                const response = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7 
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    throw new Error(`API request failed: ${response.status} - ${errorBody}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+                    throw new Error('Invalid API response structure.');
+                }
+                const text = data.candidates[0].content.parts[0].text;
+                
+                const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```|(\[[\s\S]*\]|\{[\s\S]*\})/);
+                if (jsonMatch) {
+                    const jsonString = jsonMatch[1] || jsonMatch[2]; 
+                    try {
+                        const parsedJson = JSON.parse(jsonString);
+                        showLoading(false);
+                        return parsedJson;
+                    } catch (e) {
+                        console.error("Failed to parse extracted JSON:", jsonString);
+                        throw new Error('Could not parse JSON from API response: ' + e.message + ". Extracted text: " + jsonString);
+                    }
+                } else {
+                    const trimmedText = text.trim();
+                    if (trimmedText.startsWith('[') && trimmedText.endsWith(']')) {
+                         try {
+                            const parsedJson = JSON.parse(trimmedText);
+                            showLoading(false);
+                            return parsedJson;
+                        } catch (e) {
+                        }
+                    }
+                    throw new Error('Could not extract JSON array or object from API response text. Response text: ' + text);
+                }
+            } catch (error) {
+                showLoading(false);
+                console.error("Gemini API call error:", error);
+                throw error; 
+            }
+        }
+
+        function startStudying() { 
+            const deckName = document.getElementById('study-deck-select').value;
+            if (!deckName || !currentDecks[deckName] || currentDecks[deckName].length === 0) {
+                showNotification('Please select a valid deck with cards.', 'error');
+                document.getElementById('study-area').classList.add('hidden'); 
+                return;
+            }
+
+            currentStudyDeck = currentDecks[deckName];
+            currentCardIndex = 0;
+            isFlipped = false; 
+            const flashcardElement = document.querySelector('.flashcard');
+            if (flashcardElement) {
+                flashcardElement.classList.remove('is-flipped');
+            }
+
+            document.getElementById('study-area').classList.remove('hidden');
+            showCurrentCard();
+        }
+
+        function showCurrentCard() {
+            const flashcardElement = document.querySelector('.flashcard');
+            const contentContainer = document.getElementById('flashcard-content');
+            const counter = document.getElementById('card-counter');
+
+            if (!currentStudyDeck || currentStudyDeck.length === 0) {
+                contentContainer.innerHTML = '<div class="flashcard-face flashcard-front-face">No cards in this deck or deck not selected.</div>';
+                counter.textContent = '0 / 0';
+                if (flashcardElement) flashcardElement.classList.remove('is-flipped');
+                return;
+            }
+
+            const card = currentStudyDeck[currentCardIndex];
+            contentContainer.innerHTML = '';
+
+            const frontFace = document.createElement('div');
+            frontFace.className = 'flashcard-face flashcard-front-face';
+            frontFace.textContent = card.front;
+            contentContainer.appendChild(frontFace);
+
+            const backFace = document.createElement('div');
+            backFace.className = 'flashcard-face flashcard-back-face';
+            backFace.textContent = card.back;
+            contentContainer.appendChild(backFace);
+            
+            counter.textContent = `${currentCardIndex + 1} / ${currentStudyDeck.length}`;
+
+            if (flashcardElement) {
+                if (isFlipped) {
+                    flashcardElement.classList.add('is-flipped');
+                } else {
+                    flashcardElement.classList.remove('is-flipped');
+                }
+            }
+        }
+
+        function flipCard() { 
+            if (!currentStudyDeck || currentStudyDeck.length === 0) return;
+            
+            const flashcardElement = document.querySelector('.flashcard');
+            if (flashcardElement) {
+                isFlipped = !isFlipped;
+                flashcardElement.classList.toggle('is-flipped');
+            }
+        }
+
+        function nextCard(event) { 
+            if (event) {
+                event.stopPropagation();
+            }
+            if (!currentStudyDeck || currentStudyDeck.length === 0) return;
+
+            const flashcardElement = document.querySelector('.flashcard');
+            const flashcardContent = document.getElementById('flashcard-content');
+            
+            isFlipped = false; 
+            
+            flashcardContent.style.transition = 'none'; 
+            flashcardElement.classList.remove('is-flipped'); 
+            requestAnimationFrame(() => { 
+                requestAnimationFrame(() => { 
+                    flashcardContent.style.transition = ''; 
+                });
+            });
+
+
+            flashcardElement.classList.add('sliding-next');
+
+            setTimeout(() => {
+                currentCardIndex = (currentCardIndex + 1) % currentStudyDeck.length;
+                showCurrentCard(); 
+                flashcardElement.classList.remove('sliding-next');
+            }, 300);
+        }
+
+        function previousCard(event) { 
+            if (event) {
+                event.stopPropagation();
+            }
+            if (!currentStudyDeck || currentStudyDeck.length === 0) return;
+
+            const flashcardElement = document.querySelector('.flashcard');
+            const flashcardContent = document.getElementById('flashcard-content');
+            
+            isFlipped = false; 
+
+            flashcardContent.style.transition = 'none';
+            flashcardElement.classList.remove('is-flipped');
+             requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    flashcardContent.style.transition = '';
+                });
+            });
+
+            flashcardElement.classList.add('sliding-prev');
+
+            setTimeout(() => {
+                currentCardIndex = currentCardIndex === 0 ? currentStudyDeck.length - 1 : currentCardIndex - 1;
+                showCurrentCard();
+                flashcardElement.classList.remove('sliding-prev');
+            }, 300);
+        }
+
+
+        async function startQuiz() {
+            const deckName = document.getElementById('quiz-deck-select').value;
+            const questionCount = parseInt(document.getElementById('quiz-question-count').value);
+
+            if (!deckName || !currentDecks[deckName]) {
+                showNotification('Please select a valid deck', 'error');
+                return;
+            }
+
+            const deck = currentDecks[deckName];
+            if (deck.length === 0) {
+                showNotification('The selected deck is empty', 'error');
+                return;
+            }
+            
+            const minCardsForQuiz = currentQuizType === 'multiple' ? 4 : 1; 
+            if (deck.length < minCardsForQuiz && currentQuizType === 'multiple') {
+                 showNotification(`Multiple choice quiz requires at least ${minCardsForQuiz} cards in the deck.`, 'error');
+                 return;
+            }
+             if (deck.length < 1 && currentQuizType === 'short') {
+                 showNotification(`Short answer quiz requires at least 1 card in the deck.`, 'error');
+                 return;
+            }
+
+            const eligibleCards = deck; 
+            if (eligibleCards.length === 0) {
+                showNotification('No suitable cards for a quiz in this deck.', 'error');
+                return;
+            }
+
+            const actualQuestionCount = Math.min(questionCount, eligibleCards.length);
+            if (actualQuestionCount === 0) {
+                showNotification('Not enough cards to start a quiz.', 'error');
+                return;
+            }
+            const shuffledCards = shuffleArray([...eligibleCards]).slice(0, actualQuestionCount);
+
+            currentQuiz = {
+                deck: deckName,
+                cards: shuffledCards,
+                currentQuestion: 0,
+                type: currentQuizType,
+                totalQuestions: shuffledCards.length
+            };
+            quizResults = []; 
+
+            document.getElementById('quiz-results').classList.add('hidden'); 
+            document.getElementById('quiz-content').innerHTML = ''; 
+            document.getElementById('quiz-content').style.display = 'block'; 
+            document.getElementById('quiz-area').classList.remove('hidden');
+            document.getElementById('download-in-progress-report-btn').classList.remove('hidden');
+            document.getElementById('quit-quiz-btn').classList.remove('hidden');
+            
+            updateLiveScoreDisplay();
+            
+            if (currentQuizType === 'multiple') {
+                await generateMultipleChoiceQuiz();
+            } else {
+                generateShortAnswerQuiz();
+            }
+        }
+        
+        function updateLiveScoreDisplay() {
+            const questionsAnswered = quizResults.length;
+            const correctAnswers = quizResults.filter(r => r.isCorrect).length;
+            const totalQuestionsInQuiz = currentQuiz ? currentQuiz.totalQuestions : 0;
+
+            document.getElementById('quiz-question-counter-live').textContent = `Question ${questionsAnswered + 1 > totalQuestionsInQuiz ? totalQuestionsInQuiz : questionsAnswered + 1}/${totalQuestionsInQuiz}`;
+            document.getElementById('quiz-live-score').textContent = `Score: ${correctAnswers}/${questionsAnswered}`;
+        }
+
+
+        async function generateMultipleChoiceQuiz() {
+            if (!currentQuiz || currentQuiz.currentQuestion >= currentQuiz.cards.length) {
+                showQuizResults();
+                return;
+            }
+            showLoading(true);
+            updateLiveScoreDisplay();
+
+            try {
+                const card = currentQuiz.cards[currentQuiz.currentQuestion];
+                let prompt;
+
+                switch (currentQuizDifficulty) {
+                    case 'hard':
+                        prompt = `Create a hard multiple-choice question for: Front: "${card.front}", Back: "${card.back}". The question MUST require analysis, synthesis, or evaluation. Use nuanced language like "What is the most significant implication of...", "Which statement best critiques...", or "Which of the following is LEAST associated with...". The options must be subtle. One is correct, but the others should be common misconceptions, require finer distinctions, or be plausible but incorrect applications of the concept. Return as a valid JSON object: {"question": "string", "options": ["string", "string", "string", "string"], "correctIndex": number}`;
+                        break;
+                    case 'medium':
+                        prompt = `Create a medium-difficulty multiple-choice question for: Front: "${card.front}", Back: "${card.back}". The question should ask the user to identify the "best" description or "primary" purpose, requiring them to differentiate between partially correct options. For example, use phrases like "What is the primary purpose of..." or "Which statement best describes...". The correct answer must be the most accurate. Distractors should be plausible but less accurate or incomplete. Return as a valid JSON object: {"question": "string", "options": ["string", "string", "string", "string"], "correctIndex": number}`;
+                        break;
+                    default:
+                        prompt = `Create an easy multiple-choice question based on this flashcard: Front: "${card.front}", Back: "${card.back}". The question should be a straightforward "What is..." or "Which of the following is..." question. The correct answer should be a simple restatement of the back of the card. The incorrect options should be clearly wrong but related to the topic. Return as a valid JSON object: {"question": "string", "options": ["string", "string", "string", "string"], "correctIndex": number}`;
+                        break;
+                }
+
+                const quizData = await callGeminiAPI(prompt);
+
+                if (!quizData || typeof quizData.question !== 'string' || !Array.isArray(quizData.options) || quizData.options.length !== 4 || typeof quizData.correctIndex !== 'number' || quizData.correctIndex < 0 || quizData.correctIndex > 3) {
+                    showNotification('Failed to generate a valid multiple choice question. Using fallback.', 'error');
+                    console.error("Invalid quizData structure from API:", quizData);
+                    const fallbackOptions = shuffleArray([card.back, `Incorrect Option A for ${card.front}`, `Incorrect Option B for ${card.front}`, `Incorrect Option C for ${card.front}`]);
+                    const fallbackCorrectIndex = fallbackOptions.indexOf(card.back);
+                    displayMultipleChoiceQuestion({
+                        question: `What is "${card.front}"?`,
+                        options: fallbackOptions,
+                        correctIndex: fallbackCorrectIndex
+                    }, card);
+                } else {
+                    displayMultipleChoiceQuestion(quizData, card);
+                }
+            } catch (error) {
+                showNotification('Error generating quiz question: ' + error.message, 'error');
+                console.error("Error in generateMultipleChoiceQuiz:", error);
+                const card = currentQuiz.cards[currentQuiz.currentQuestion];
+                const fallbackOptions = shuffleArray([card.back, "Alternative A (incorrect)", "Alternative B (incorrect)", "Alternative C (incorrect)"]);
+                const fallbackCorrectIndex = fallbackOptions.indexOf(card.back);
+                displayMultipleChoiceQuestion({
+                    question: `Regarding "${card.front}", what is the answer?`,
+                    options: fallbackOptions,
+                    correctIndex: fallbackCorrectIndex
+                }, card);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+
+        function displayMultipleChoiceQuestion(quizData, originalCard) {
+            const content = document.getElementById('quiz-content');
+            content.innerHTML = `
+                <div class="quiz-question">
+                    <p>${quizData.question || originalCard.front}</p>
+                </div>
+                <div class="quiz-options" id="quiz-options">
+                    ${(quizData.options).map((option, index) => `
+                        <div class="quiz-option" onclick="selectOption(this, ${index})">${option}</div>
+                    `).join('')}
+                </div>
+                <button class="btn" onclick="submitMultipleChoice(${quizData.correctIndex})" id="submit-btn" disabled>Submit Answer</button>
+                <button class="btn hidden" id="next-question-btn" onclick="proceedToNextQuizQuestion()">Next Question</button>
+            `;
+        }
+
+        function selectOption(element, index) {
+            document.querySelectorAll('.quiz-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('submit-btn').disabled = false;
+            currentQuiz.selectedOption = index; 
+        }
+
+
+        function submitMultipleChoice(correctIndex) {
+            const isCorrect = currentQuiz.selectedOption === correctIndex;
+            const card = currentQuiz.cards[currentQuiz.currentQuestion];
+            const selectedOptionElement = document.querySelector('.quiz-option.selected');
+            const userAnswerText = selectedOptionElement ? selectedOptionElement.textContent : "No answer selected";
+            const quizQuestionData = document.querySelector('#quiz-content .quiz-question p');
+            const questionText = quizQuestionData ? quizQuestionData.textContent : card.front;
+            
+            const allOptions = Array.from(document.querySelectorAll('.quiz-option')).map(opt => opt.textContent);
+            const correctAnswerTextAPI = allOptions[correctIndex];
+
+
+            quizResults.push({
+                question: questionText, 
+                userAnswer: userAnswerText,
+                correctAnswer: correctAnswerTextAPI, 
+                isCorrect: isCorrect,
+                originalCardBack: card.back 
+            });
+            updateLiveScoreDisplay();
+
+            showQuizResultFeedback(isCorrect, correctAnswerTextAPI); 
+            
+            document.querySelectorAll('.quiz-option').forEach(opt => opt.onclick = null); 
+            document.getElementById('submit-btn').classList.add('hidden');
+            const nextButton = document.getElementById('next-question-btn');
+            if(nextButton) nextButton.classList.remove('hidden');
+        }
+        
+        function showQuizResultFeedback(isCorrect, correctAnswerText) { 
+            const content = document.getElementById('quiz-content');
+            const existingFeedback = content.querySelector('.quiz-result');
+            if (existingFeedback) {
+                existingFeedback.remove();
+            }
+
+            const feedbackDiv = document.createElement('div');
+            feedbackDiv.className = `quiz-result ${isCorrect ? 'correct' : 'incorrect'}`;
+            feedbackDiv.innerHTML = `<h3>${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</h3>`;
+            if (!isCorrect) {
+                feedbackDiv.innerHTML += `<p><strong>Correct answer:</strong> ${correctAnswerText}</p>`;
+            }
+            
+            const nextButton = document.getElementById('next-question-btn') || document.getElementById('next-question-btn-short');
+            if (nextButton) {
+                 content.insertBefore(feedbackDiv, nextButton);
+            } else {
+                 content.appendChild(feedbackDiv); 
+            }
+        }
+
+
+        async function generateShortAnswerQuiz() {
+            if (!currentQuiz || currentQuiz.currentQuestion >= currentQuiz.cards.length) {
+                showQuizResults();
+                return;
+            }
+            updateLiveScoreDisplay();
+            const card = currentQuiz.cards[currentQuiz.currentQuestion];
+            const content = document.getElementById('quiz-content');
+            
+            const questionPrompt = `Based on this flashcard - Front: "${card.front}", Back: "${card.back}"
+Generate a ${currentQuizDifficulty}-level question following these specific guidelines:
+
+For Easy level:
+- Ask for direct recall of key facts or definitions
+- Use straightforward language
+- Focus on the main concept only
+- Example formats: "What is...", "Define...", "Name the..."
+
+For Medium level:
+- Ask for explanation of relationships or processes
+- Require understanding of "how" and "why"
+- Include application of the concept
+- Example formats: "Explain how...", "Why does...", "Compare..."
+
+For Hard level:
+- Require deep analysis or synthesis
+- Ask for evaluation or prediction
+- Include real-world applications or scenarios
+- Example formats: "Analyze...", "What would happen if...", "Design..."
+
+Return as JSON: {"question": "your question here"}`;
+
+            try {
+                const questionData = await callGeminiAPI(questionPrompt);
+                const questionText = questionData.question || card.front;
+                
+                content.innerHTML = `
+                    <div class="quiz-question">
+                        <p>${questionText}</p>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="short-answer" class="form-textarea" 
+                            placeholder="${currentQuizDifficulty === 'easy' ? 'Write a brief answer (1-2 sentences)' : 
+                                        currentQuizDifficulty === 'medium' ? 'Explain your answer (2-3 sentences)' : 
+                                        'Provide a detailed answer with examples or analysis (3-4 sentences)'}" rows="4"></textarea>
+                    </div>
+                    <button class="btn" onclick="submitShortAnswer()" id="submit-btn-short">Submit Answer</button>
+                    <button class="btn hidden" id="next-question-btn-short" onclick="proceedToNextQuizQuestion()">Next Question</button>
+                `;
+            } catch (error) {
+                console.error('Error generating contextual question:', error);
+                content.innerHTML = `
+                    <div class="quiz-question">
+                        <p>${card.front}</p>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="short-answer" class="form-textarea" placeholder="Enter your answer (1-4 sentences)" rows="4"></textarea>
+                    </div>
+                    <button class="btn" onclick="submitShortAnswer()" id="submit-btn-short">Submit Answer</button>
+                    <button class="btn hidden" id="next-question-btn-short" onclick="proceedToNextQuizQuestion()">Next Question</button>
+                `;
+            }
+        }
+
+        async function submitShortAnswer() {
+            const userAnswer = document.getElementById('short-answer').value.trim();
+            if (!userAnswer) {
+                showNotification('Please enter an answer', 'error');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const card = currentQuiz.cards[currentQuiz.currentQuestion];
+                const prompt = `The question was: "${document.querySelector('.quiz-question p').textContent}". The ideal answer is: "${card.back}". The user's answer is: "${userAnswer}". The quiz difficulty was set to "${currentQuizDifficulty}".
+
+Evaluate the user's answer based ONLY on the specified difficulty:
+- **Easy:** Be lenient. The answer is correct if it contains the key ideas from the ideal answer, even if poorly worded or incomplete.
+- **Medium:** Expect a clear explanation. The answer must be mostly correct and use appropriate terminology. It should show understanding beyond simple recall.
+- **Hard:** Be strict. The answer must be precise, comprehensive, and demonstrate a deep understanding, potentially including nuance or implications beyond the basic definition.
+
+Return a JSON object with two keys: { "isCorrect": boolean, "explanation": "A brief, one-sentence explanation for your evaluation based on the criteria." } The JSON must be strictly in this format.`;
+
+                const evaluation = await callGeminiAPI(prompt);
+
+                quizResults.push({
+                    question: card.front,
+                    userAnswer: userAnswer,
+                    correctAnswer: card.back,
+                    isCorrect: evaluation.isCorrect || false,
+                    explanation: evaluation.explanation || (evaluation.isCorrect ? "Correct!" : "Incorrect, see correct answer.")
+                });
+                updateLiveScoreDisplay();
+
+                showQuizResultFeedback(evaluation.isCorrect || false, card.back);
+                document.getElementById('short-answer').disabled = true;
+                document.getElementById('submit-btn-short').classList.add('hidden');
+                document.getElementById('next-question-btn-short').classList.remove('hidden');
+
+            } catch (error) {
+                showNotification('Error evaluating answer: ' + error.message, 'error');
+                const card = currentQuiz.cards[currentQuiz.currentQuestion];
+                quizResults.push({
+                    question: card.front,
+                    userAnswer: userAnswer,
+                    correctAnswer: card.back,
+                    isCorrect: false,
+                    explanation: "Could not automatically evaluate. Correct answer: " + card.back
+                });
+                updateLiveScoreDisplay();
+                showQuizResultFeedback(false, card.back);
+                document.getElementById('short-answer').disabled = true;
+                document.getElementById('submit-btn-short').classList.add('hidden');
+                document.getElementById('next-question-btn-short').classList.remove('hidden');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+
+        function proceedToNextQuizQuestion() {
+            const content = document.getElementById('quiz-content');
+            const feedbackDiv = content.querySelector('.quiz-result');
+            if (feedbackDiv) {
+                feedbackDiv.remove();
+            }
+
+            const nextBtn = document.getElementById('next-question-btn');
+            if (nextBtn) nextBtn.classList.add('hidden');
+            const nextBtnShort = document.getElementById('next-question-btn-short');
+            if (nextBtnShort) nextBtnShort.classList.add('hidden');
+
+            currentQuiz.currentQuestion++;
+            if (currentQuiz.currentQuestion < currentQuiz.cards.length) {
+                if (currentQuiz.type === 'multiple') {
+                    generateMultipleChoiceQuiz();
+                } else {
+                    generateShortAnswerQuiz();
+                }
+            } else {
+                showQuizResults();
+            }
+        }
+
+
+        async function showQuizResults() {
+            document.getElementById('quiz-content').style.display = 'none'; 
+            document.getElementById('download-in-progress-report-btn').classList.add('hidden');
+            document.getElementById('quit-quiz-btn').classList.add('hidden');
+
+            const resultsArea = document.getElementById('quiz-results');
+            resultsArea.classList.remove('hidden');
+            
+            const correctAnswers = quizResults.filter(r => r.isCorrect).length;
+            const totalQuestionsAnswered = quizResults.length;
+            const totalQuestionsInQuiz = currentQuiz.totalQuestions;
+
+            document.getElementById('final-score').textContent = `${correctAnswers} / ${totalQuestionsInQuiz}`;
+            const percentage = totalQuestionsAnswered > 0 ? Math.round((correctAnswers / totalQuestionsAnswered) * 100) : 0;
+            document.getElementById('score-percentage').textContent = `Score: ${percentage}% (${correctAnswers} out of ${totalQuestionsAnswered} answered correctly)`;
+            
+            showLoading(true);
+            try {
+                const wrongAnswersSummary = quizResults
+                    .filter(r => !r.isCorrect)
+                    .map(r => `Question: "${r.question}", Your Answer: "${r.userAnswer}", Correct: "${r.correctAnswer}"`)
+                    .slice(0, 3) 
+                    .join('; ');
+
+                const feedbackPrompt = `A user completed a quiz on the topic of "${currentQuiz.deck}". They answered ${totalQuestionsAnswered} questions out of ${totalQuestionsInQuiz}. They got ${correctAnswers} out of ${totalQuestionsAnswered} correct (${percentage}%). ${wrongAnswersSummary ? `Some incorrect answers were: ${wrongAnswersSummary}.` : ''} Provide 2-3 sentences of constructive feedback, suggesting areas for improvement or congratulating them. Be encouraging. Return as a simple text string.`;
+                
+                 const feedbackResponse = await fetch(`${GEMINI_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: feedbackPrompt }] }] })
+                });
+                if (!feedbackResponse.ok) throw new Error('Feedback API error');
+                const feedbackData = await feedbackResponse.json();
+                const feedbackText = feedbackData.candidates[0].content.parts[0].text;
+
+                document.getElementById('quiz-feedback').textContent = feedbackText || 'Great job completing the quiz! Keep practicing.';
+            } catch (error) {
+                console.error("Error generating quiz feedback:", error);
+                document.getElementById('quiz-feedback').textContent = 'Great job completing the quiz! Review your answers and keep practicing to improve your knowledge.';
+            } finally {
+                 showLoading(false);
+            }
+        }
+        
+        function quitQuiz() {
+            showCustomConfirm("Are you sure you want to quit this quiz? Your progress will not be saved.", () => {
+                currentQuiz = null;
+                quizResults = [];
+                document.getElementById('quiz-area').classList.add('hidden');
+                document.getElementById('quiz-content').innerHTML = '';
+                document.getElementById('quiz-results').classList.add('hidden');
+                document.getElementById('download-in-progress-report-btn').classList.add('hidden');
+                document.getElementById('quit-quiz-btn').classList.add('hidden');
+                showNotification('Quiz quit. No results saved.', 'success');
+                document.getElementById('quiz-deck-select').value = '';
+                document.getElementById('quiz-question-count').value = 10;
+            });
+        }
+
+
+        function downloadQuizReport() {
+            if (!currentQuiz || quizResults.length === 0) {
+                showNotification("No quiz data to report yet. Answer some questions first.", "error");
+                return;
+            }
+            const correctAnswers = quizResults.filter(r => r.isCorrect).length;
+            const totalAnswered = quizResults.length;
+            const percentage = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+            
+            const isQuizComplete = currentQuiz.currentQuestion >= currentQuiz.cards.length;
+            const feedbackText = isQuizComplete ? document.getElementById('quiz-feedback').textContent : "Quiz in progress. Overall feedback will be available upon completion.";
+
+
+            let reportContent = `QUIZ REPORT\n\n`;
+            reportContent += `Deck: ${currentQuiz.deck}\n`;
+            reportContent += `Date: ${new Date().toLocaleDateString()}\n`;
+            if (isQuizComplete) {
+                reportContent += `Status: Completed\n`;
+                reportContent += `Final Score: ${correctAnswers}/${currentQuiz.totalQuestions} (${percentage}% of answered questions)\n\n`;
+            } else {
+                reportContent += `Status: In Progress\n`;
+                reportContent += `Current Score: ${correctAnswers}/${totalAnswered} answered (${percentage}%)\n`;
+                reportContent += `Questions Answered: ${totalAnswered} out of ${currentQuiz.totalQuestions}\n\n`;
+            }
+            
+            reportContent += `DETAILED RESULTS (Answered Questions):\n\n`;
+
+            quizResults.forEach((result, index) => {
+                reportContent += `Question ${index + 1}: ${result.question}\n`;
+                reportContent += `Your Answer: ${result.userAnswer}\n`;
+                reportContent += `Correct Answer: ${result.correctAnswer}\n`;
+                reportContent += `Result: ${result.isCorrect ? 'CORRECT' : 'INCORRECT'}\n`;
+                if (result.explanation && (currentQuiz.type === 'short' || !result.isCorrect)) { 
+                    reportContent += `Feedback: ${result.explanation}\n`;
+                }
+                reportContent += `\n`;
+            });
+            
+            if (isQuizComplete) {
+                 reportContent += `OVERALL FEEDBACK:\n${feedbackText}\n`;
+            } else {
+                 reportContent += `OVERALL FEEDBACK: Complete the quiz for full feedback.\n`;
+            }
+
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const lineHeight = 7;
+            let y = 20;
+            
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text('QUIZ REPORT', 105, y, { align: 'center' });
+            y += lineHeight * 2;
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Deck: ${currentQuiz.deck}`, 20, y);
+            y += lineHeight;
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, y);
+            y += lineHeight;
+            doc.text(`Difficulty Level: ${currentQuizDifficulty.charAt(0).toUpperCase() + currentQuizDifficulty.slice(1)}`, 20, y);
+            y += lineHeight;
+            doc.text(isQuizComplete ? 'Status: Completed' : 'Status: In Progress', 20, y);
+            y += lineHeight;
+            doc.text(`Score: ${correctAnswers}/${totalQuestionsInQuiz} (${percentage}%)`, 20, y);
+            y += lineHeight * 2;
+
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('DETAILED RESULTS', 20, y);
+            y += lineHeight * 1.5;
+
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'normal');
+            
+            quizResults.forEach((result, index) => {
+                if (y > 250) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                doc.setFont(undefined, 'bold');
+                doc.text(`Question ${index + 1}:`, 20, y);
+                doc.setFont(undefined, 'normal');
+                const questionLines = doc.splitTextToSize(result.question, 170);
+                doc.text(questionLines, 20, y + lineHeight);
+                y += lineHeight * (questionLines.length + 1);
+                
+                doc.text(`Your Answer: ${result.userAnswer}`, 20, y);
+                y += lineHeight;
+                
+                doc.text(`Correct Answer: ${result.correctAnswer}`, 20, y);
+                y += lineHeight;
+                
+                doc.text(`Result: ${result.isCorrect ? 'CORRECT' : 'INCORRECT'}`, 20, y);
+                y += lineHeight;
+                
+                if (result.explanation) {
+                    const explanationLines = doc.splitTextToSize(`Feedback: ${result.explanation}`, 170);
+                    doc.text(explanationLines, 20, y);
+                    y += lineHeight * (explanationLines.length + 1);
+                }
+                
+                y += lineHeight;
+            });
+            
+            if (isQuizComplete && feedbackText) {
+                if (y > 250) {
+                    doc.addPage();
+                    y = 20;
+                }
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('OVERALL FEEDBACK', 20, y);
+                y += lineHeight * 1.5;
+                
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'normal');
+                const feedbackLines = doc.splitTextToSize(feedbackText, 170);
+                doc.text(feedbackLines, 20, y);
+            }
+
+            doc.save(`Quiz_Report_${currentQuiz.deck.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification("Quiz report downloaded as PDF.", "success");
+        }
+
+        function displayDecks() {
+            const deckList = document.getElementById('deck-list');
+            deckList.innerHTML = '';
+
+            if (Object.keys(currentDecks).length === 0) {
+                deckList.innerHTML = '<p>No decks created yet. Go to Create Cards to get started!</p>';
+                return;
+            }
+
+            Object.keys(currentDecks).sort().forEach(deckName => {
+                const deck = currentDecks[deckName];
+                const deckDiv = document.createElement('div');
+                deckDiv.className = 'card'; 
+                deckDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="color: var(--primary-blue);">${deckName}</h3>
+                        <span>${deck.length} card${deck.length === 1 ? '' : 's'}</span>
+                    </div>
+                    <div class="card-list" style="max-height: 200px; padding-right: 10px;">
+                        ${deck.map((card, index) => `
+                            <div class="card-item">
+                                <div style="flex-grow: 1;">
+                                    <strong>${card.front.substring(0,100)}${card.front.length > 100 ? '...' : ''}</strong><br>
+                                    <small style="color: var(--text-secondary);">${card.back.substring(0, 100)}${card.back.length > 100 ? '...' : ''}</small>
+                                </div>
+                                <button class="btn btn-danger btn-sm" style="padding: 5px 10px; font-size: 12px; margin-left:10px;" onclick="deleteCard('${deckName}', ${index})">Delete</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="margin-top: 20px; text-align: right;">
+                        <button class="btn btn-danger" onclick="deleteDeck('${deckName}')">Delete Deck</button>
+                    </div>
+                `;
+                deckList.appendChild(deckDiv);
+            });
+        }
+
+        function deleteCard(deckName, cardIndex) {
+            showCustomConfirm(`Are you sure you want to delete this card from "${deckName}"?`, () => {
+                currentDecks[deckName].splice(cardIndex, 1);
+                saveDecks();
+                updateDeckSelectors();
+                displayDecks(); 
+                showNotification('Card deleted.', 'success');
+            });
+        }
+
+        function deleteDeck(deckName) {
+            showCustomConfirm(`Are you sure you want to delete the entire "${deckName}" deck? This cannot be undone.`, () => {
+                delete currentDecks[deckName];
+                saveDecks();
+                updateDeckSelectors();
+                displayDecks(); 
+                showNotification(`Deck "${deckName}" deleted.`, 'success');
+            });
+        }
+        
+        function showCustomConfirm(message, onConfirm) {
+            const existingModal = document.getElementById('custom-confirm-modal');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'custom-confirm-modal';
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background-color: rgba(0,0,0,0.5); display: flex;
+                justify-content: center; align-items: center; z-index: 2000;
+            `;
+
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: var(--surface); color: var(--text); padding: 30px; border-radius: 12px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center;
+                max-width: 400px; width: 90%;
+            `;
+            
+            const messageP = document.createElement('p');
+            messageP.textContent = message;
+            messageP.style.marginBottom = '20px';
+            messageP.style.fontSize = '16px';
+
+            const confirmButton = document.createElement('button');
+            confirmButton.textContent = 'Confirm';
+            confirmButton.className = 'btn'; 
+            confirmButton.style.marginRight = '10px';
+
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancel';
+            cancelButton.className = 'btn btn-secondary'; 
+
+            confirmButton.onclick = () => {
+                onConfirm();
+                modal.remove();
+            };
+            cancelButton.onclick = () => {
+                modal.remove();
+            };
+
+            modalContent.appendChild(messageP);
+            modalContent.appendChild(confirmButton);
+            modalContent.appendChild(cancelButton);
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+        }
+
+
+        function updateDeckSelectors() {
+            const selectors = [
+                'deck-select-manual',
+                'existing-deck-select',
+                'study-deck-select',
+                'quiz-deck-select'
+            ];
+
+            selectors.forEach(selectorId => {
+                const selector = document.getElementById(selectorId);
+                if (!selector) return; 
+                
+                const currentValue = selector.value; 
+                selector.innerHTML = selectorId === 'deck-select-manual' ? 
+                    '<option value="">New Deck</option>' : 
+                    '<option value="">Select a deck</option>';
+
+                Object.keys(currentDecks).sort().forEach(deckName => { 
+                    const option = document.createElement('option');
+                    option.value = deckName;
+                    option.textContent = `${deckName} (${currentDecks[deckName].length} card${currentDecks[deckName].length === 1 ? '' : 's'})`;
+                    selector.appendChild(option);
+                });
+
+                if (currentValue && currentDecks[currentValue]) {
+                    selector.value = currentValue;
+                } else {
+                     if (selectorId !== 'deck-select-manual' && selector.options.length > 1) {
+                     }
+                }
+            });
+        }
+
+        function saveDecks() {
+            try {
+                localStorage.setItem('flashcardDecks', JSON.stringify(currentDecks));
+            } catch (error) {
+                console.error('Error saving decks:', error);
+                showNotification('Could not save decks to local storage. Changes might not persist.', 'error');
+            }
+        }
+
+        function loadDecks() {
+            try {
+                const saved = localStorage.getItem('flashcardDecks');
+                if (saved) {
+                    currentDecks = JSON.parse(saved);
+                }
+            } catch (error) {
+                console.error('Error loading decks:', error);
+                currentDecks = {}; 
+                showNotification('Could not load decks from local storage.', 'error');
+            }
+        }
+
+        function showLoading(show) {
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.classList.toggle('hidden', !show);
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        document.addEventListener('keydown', function(e) {
+            const activeElement = document.activeElement;
+            const isInputFocused = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable;
+            const isModalOpen = !!document.getElementById('custom-confirm-modal');
+
+
+            if (currentStudyDeck && document.getElementById('study-section') && !document.getElementById('study-section').classList.contains('hidden') && !document.getElementById('study-area').classList.contains('hidden')) {
+                if (!isInputFocused && !isModalOpen) { 
+                    let processedInStudy = false;
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                            previousCard(e); 
+                            processedInStudy = true;
+                            break;
+                        case 'ArrowRight':
+                            nextCard(e); 
+                            processedInStudy = true;
+                            break;
+                        case ' ': 
+                            flipCard();
+                            processedInStudy = true;
+                            break;
+                    }
+                    if (processedInStudy) {
+                        e.preventDefault(); 
+                    }
+                }
+            }
+        });
+
+        function downloadDeckAsPDF() {
+            const deckName = document.getElementById('study-deck-select').value;
+            if (!deckName || !currentDecks[deckName]) {
+                showNotification('Please select a deck first', 'error');
+                return;
+            }
+
+            const deck = currentDecks[deckName];
+            if (deck.length === 0) {
+                showNotification('Selected deck is empty', 'error');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4' 
+            });
+
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 15; 
+            const cardWidth = (pageWidth - (3 * margin)) / 2; 
+            const cardHeight = (pageHeight - (3 * margin)) / 2; 
+            const cardsPerPage = 4; 
+
+            let cardSideCount = 0;
+
+            deck.forEach((card, index) => {
+                if (cardSideCount % cardsPerPage === 0 && cardSideCount > 0) {
+                    doc.addPage();
+                }
+                let x = margin + ( (cardSideCount % 2) * (cardWidth + margin) );
+                let y = margin + ( Math.floor((cardSideCount % cardsPerPage) / 2) * (cardHeight + margin) );
+                
+                doc.setDrawColor(180); 
+                doc.setLineWidth(0.3);
+                doc.rect(x, y, cardWidth, cardHeight);
+
+                doc.setFontSize(10); 
+                doc.setFont('helvetica', 'bold');
+                doc.text('Front: ' + card.front.substring(0, 30) + (card.front.length > 30 ? "..." : ""), x + 5, y + 7); 
+                
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9); 
+                const frontLines = doc.splitTextToSize(card.front, cardWidth - 10);
+                try { doc.text(frontLines, x + 5, y + 15); } catch(e) { console.error("Error rendering front text:", e); }
+                cardSideCount++;
+
+                if (cardSideCount % cardsPerPage === 0) { 
+                    doc.addPage();
+                }
+                x = margin + ( (cardSideCount % 2) * (cardWidth + margin) );
+                y = margin + ( Math.floor((cardSideCount % cardsPerPage) / 2) * (cardHeight + margin) );
+
+                doc.setDrawColor(180);
+                doc.setLineWidth(0.3);
+                doc.rect(x, y, cardWidth, cardHeight);
+
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Back: ' + card.back.substring(0, 30) + (card.back.length > 30 ? "..." : ""), x + 5, y + 7); 
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9);
+                const backLines = doc.splitTextToSize(card.back, cardWidth - 10);
+                try { doc.text(backLines, x + 5, y + 15); } catch(e) { console.error("Error rendering back text:", e); }
+                cardSideCount++;
+            });
+
+            doc.save(`${deckName}_flashcards.pdf`);
+            showNotification('PDF downloaded successfully!', 'success');
+        }
+    </script>
+</body>
+</html>
