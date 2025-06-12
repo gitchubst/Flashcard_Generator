@@ -879,7 +879,7 @@
             <div id="loading" class="loading hidden"> <div class="spinner"></div>
             </div>
         </div> </div> <script>
-        const API_KEY = "AIzaSyDSE1dNpR14EeDpC8c0MUIPASO7B8xfuLA"; 
+        const API_KEY = "AIzaSyDnsVhY1ZNIQY226p2dwlSGysMnD2wHAFs"; 
         const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
         let currentDecks = {};
@@ -1427,7 +1427,7 @@
                 switch (currentQuizDifficulty) {
                     case 'hard':
                         prompt = `Create a concise but challenging multiple-choice question for this card - Front: "${card.front}", Back: "${card.back}". 
-                        Follow these rules strictly:
+                        Follow these rules strictly: dont give more information than you have to in the question and dont put too many details
                         1. Question must be under 20 words
                         2. Test application of knowledge or require inference
                         3. All options should be short (under 15 words each)
